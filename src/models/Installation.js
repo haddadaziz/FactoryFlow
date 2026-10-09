@@ -22,5 +22,4 @@ const installationSchema = new mongoose.Schema(
     }
 );
 
-const Installation = mongoose.model('Installation', installationSchema);
-module.exports = Installation;
+module.exports = mongoose.model('Installation', installationSchema);

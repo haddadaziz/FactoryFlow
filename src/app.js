@@ -5,7 +5,7 @@ const AppError = require('./utils/AppError.js');
 const installationRoutes = require('./routes/installationRoutes.js');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes.js');
-
+const rawMaterialRoutes = require('./routes/rawMaterialRoutes.js');
 const app = express();
 
 app.use(cors());
@@ -17,7 +17,7 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/installation',installationRoutes);
 app.use('/api/auth',authRoutes);
-
+app.use('/api/raw-materials',rawMaterialRoutes);
 app.use('/api/users',userRoutes);
 
 app.use((req, res, next) => {

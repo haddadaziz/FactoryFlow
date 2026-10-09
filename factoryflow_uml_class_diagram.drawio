@@ -34,7 +34,7 @@
         </mxCell>
 
         
-        <mxCell id="c_mat" value="&lt;b&gt;Material (Matière Première)&lt;/b&gt;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#d97706;fontColor=#92400e;rounded=1;shadow=1;" vertex="1" parent="1">
+        <mxCell id="c_mat" value="&lt;b&gt;RawMaterial (Matière Première)&lt;/b&gt;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#d97706;fontColor=#92400e;rounded=1;shadow=1;" vertex="1" parent="1">
           <mxGeometry x="380" y="140" width="260" height="210" as="geometry" />
         </mxCell>
         <mxCell id="c_mat_attrs" value="+ _id : ObjectId&#xa;+ reference : String (unique)&#xa;+ name : String&#xa;+ unit : String&#xa;+ currentStock : Number (&gt;= 0)&#xa;+ alertThreshold : Number (&gt;= 0)&#xa;+ createdAt : Date&#xa;+ updatedAt : Date" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;fontColor=#1e293b;fontSize=11;" vertex="1" parent="c_mat">
@@ -108,7 +108,7 @@
         </mxCell>
 
         
-        <mxCell id="c_inst" value="&lt;b&gt;InstallationStatus&lt;/b&gt;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#f3e8ff;strokeColor=#a855f7;fontColor=#7e22ce;rounded=1;shadow=1;" vertex="1" parent="1">
+        <mxCell id="c_inst" value="&lt;b&gt;Installation&lt;/b&gt;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#f3e8ff;strokeColor=#a855f7;fontColor=#7e22ce;rounded=1;shadow=1;" vertex="1" parent="1">
           <mxGeometry x="1100" y="140" width="220" height="130" as="geometry" />
         </mxCell>
         <mxCell id="c_inst_attrs" value="+ _id : ObjectId&#xa;+ isInstalled : Boolean&#xa;+ installedAt : Date&#xa;+ installedByAdminId : ObjectId" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;fontColor=#1e293b;fontSize=11;" vertex="1" parent="c_inst">
