@@ -11,6 +11,10 @@ class UserRepository{
         return await User.findOne({email});
     };
 
+    async findByEmailWithPassword(email){
+        return await User.findOne({email}).select('+password');
+    }
+
     async countUsers(){
         return await User.countDocuments();
     };
@@ -18,5 +22,12 @@ class UserRepository{
     async findById(id){
         return await User.findById(id);
     };
+
+    async updateUser(id,updateData){
+        return await User.findByIdAndUpdate(id,updateData,{
+            new: true,
+            runValidators: true
+        });
+    }
 };
 module.exports = new UserRepository();
