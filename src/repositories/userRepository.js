@@ -29,5 +29,9 @@ class UserRepository{
             runValidators: true
         });
     }
+
+    async getAllUsers(){
+        return await User.find();
+    }
 };
 module.exports = new UserRepository();

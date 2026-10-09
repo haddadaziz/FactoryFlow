@@ -4,6 +4,7 @@ const errorHandler = require('./middlewares/errorHandler.js');
 const AppError = require('./utils/AppError.js');
 const installationRoutes = require('./routes/installationRoutes.js');
 const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes.js');
 
 const app = express();
 
@@ -16,6 +17,9 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/installation',installationRoutes);
 app.use('/api/auth',authRoutes);
+
+app.use('/api/users',userRoutes);
+
 app.use((req, res, next) => {
     next(new AppError(`Route ${req.originalUrl} introuvable sur ce serveur`, 404));
 });
