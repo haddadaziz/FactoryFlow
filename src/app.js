@@ -7,6 +7,7 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes.js');
 const rawMaterialRoutes = require('./routes/rawMaterialRoutes.js');
 const stockMovementRoutes = require('./routes/stockMovementRoutes');
+const productRoutes = require('./routes/productRoutes.js');
 const app = express();
 
 app.use(cors());
@@ -21,6 +22,7 @@ app.use('/api/auth',authRoutes);
 app.use('/api/raw-materials',rawMaterialRoutes);
 app.use('/api/users',userRoutes);
 app.use('/api/stock-movements',stockMovementRoutes);
+app.use('/api/products',productRoutes);
 
 app.use((req, res, next) => {
     next(new AppError(`Route ${req.originalUrl} introuvable sur ce serveur`, 404));
