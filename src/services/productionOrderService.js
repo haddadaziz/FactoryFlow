@@ -107,6 +107,16 @@ class ProductionOrderService {
         return await productionOrderRepository.update(orderId, { status: 'ANNULE', endDate: new Date() })
     };
 
+    async updateOrder(orderId,updateData){
+        const order = await productionOrderRepository.findById(orderId);
+
+        if(!order) throw new AppError('Cet ordre de prod n existe pas',404);
+
+        if(order.status !== 'PLANIFIE') throw new AppError('Seul un ordre planifie peut etre modifie',400);
+        delete updateData.status;
+        return await productionOrderRepository.update(orderId,updateData);
+    }
+
     async getAllOrders(filters) {
         return await productionOrderRepository.findAll(filters);
     };

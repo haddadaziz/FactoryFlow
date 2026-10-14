@@ -21,6 +21,15 @@ class ProductionOrderController {
 
     };
 
+    async update(req,res,next){
+        try{
+            const data = await productionOrderService.updateOrder(req.params.id,req.body);
+            return res.status(200).json({status:'success',data});
+        }catch(e){
+            next(e)
+        }
+    }
+
     async start(req, res, next) {
         try {
             const data = await productionOrderService.startOrder(req.params.id, req.user._id);

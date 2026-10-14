@@ -11,6 +11,7 @@ router.put('/:id',restrictTo('admin'),rawMaterialController.update);
 router.delete('/:id',restrictTo('admin',),rawMaterialController.delete);
 
 router.get('/',rawMaterialController.getAll);
+router.get('/alerts',rawMaterialController.getAlerts);
 router.get('/:id',rawMaterialController.getById);
 
 module.exports = router;

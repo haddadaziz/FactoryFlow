@@ -41,6 +41,16 @@ class RawMaterialController {
         }
     };
 
+    async getAlerts(req,res,next){
+        try{
+            const data = await rawMaterialService.getLowStockMaterials();
+
+            return res.status(200).json({status:'success',data});
+        }catch(e){
+            next(e)
+        }
+    }
+
     async update(req,res,next){
         try{
             const {reference,name,unit,alertThreshold} = req.body;

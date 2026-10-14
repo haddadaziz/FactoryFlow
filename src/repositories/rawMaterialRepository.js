@@ -26,6 +26,15 @@ class RawMaterialRepository{
     async delete(id){
         return await RawMaterial.findByIdAndDelete(id);
     };
+
+    async findLowStock(){
+        return await RawMaterial.find({
+            $expr: {$lte:
+                ['$currentStock','$alertThreshold']
+            }
+        }
+        )
+    }
 };
 
 module.exports = new RawMaterialRepository();

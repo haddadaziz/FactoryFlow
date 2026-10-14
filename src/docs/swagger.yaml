@@ -1,0 +1,824 @@
+openapi: 3.0.3
+info:
+  title: FactoryFlow API
+  description: >
+    API REST de gestion industrielle et traçabilité pour l'usine de Safi.
+    Centralise les stocks de matières premières, la gestion des recettes de produits finis,
+    le cycle de vie des ordres de fabrication (OF) et la cohérence transactionnelle ACID.
+  version: 1.0.0
+  contact:
+    name: Haddad Aziz
+    email: aziz.haddad003@gmail.com
+
+servers:
+  - url: http://localhost:5000
+    description: Serveur de Développement Local / Docker
+
+tags:
+  - name: Installation
+    description: Initialisation unique et vérification de l'état du système
+  - name: Authentification
+    description: Connexion et gestion du profil connecté
+  - name: Utilisateurs
+    description: Administration des comptes (Admin et Opérateurs)
+  - name: Matières Premières
+    description: Gestion du catalogue des matières premières et alertes de stock
+  - name: Mouvements de Stock
+    description: Entrées manuelles et historique de traçabilité des consommations
+  - name: Produits
+    description: Catalogue des produits finis et recettes (Nomenclature / BoM)
+  - name: Ordres de Fabrication
+    description: Planification, démarrage atomique ACID et finalisation des ordres
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Entrez votre token JWT au format: Bearer <token>"
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: fail
+        message:
+          type: string
+          example: Message d'erreur explicatif
+
+    InstallationStatusResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        data:
+          type: object
+          properties:
+            isInstalled:
+              type: boolean
+              example: false
+            installedAt:
+              type: string
+              format: date-time
+              nullable: true
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 660a123456789abcdef01234
+        name:
+          type: string
+          example: Karim Safi
+        email:
+          type: string
+          example: karim@factoryflow.com
+        role:
+          type: string
+          enum: [admin, operator]
+          example: operator
+
+    RawMaterial:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 660a123456789abcdef01235
+        reference:
+          type: string
+          example: MAT-BOIS
+        name:
+          type: string
+          example: Bois de Chêne
+        unit:
+          type: string
+          enum: [kg, g, L, ml, pièce, piece]
+          example: kg
+        currentStock:
+          type: number
+          example: 50
+        alertThreshold:
+          type: number
+          example: 10
+
+    ProductCompositionItem:
+      type: object
+      required:
+        - materialId
+        - quantity
+      properties:
+        materialId:
+          type: string
+          example: 660a123456789abcdef01235
+        quantity:
+          type: number
+          example: 2
+
+    Product:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 660a123456789abcdef01236
+        reference:
+          type: string
+          example: PROD-CHAISE
+        name:
+          type: string
+          example: Chaise Standard Safi
+        composition:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductCompositionItem'
+
+    StockMovement:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 660a123456789abcdef01237
+        type:
+          type: string
+          enum: [ENTREE, SORTIE]
+          example: ENTREE
+        materialId:
+          type: string
+          example: 660a123456789abcdef01235
+        quantity:
+          type: number
+          example: 50
+        reason:
+          type: string
+          example: Livraison fournisseur #101
+        performedByUserId:
+          type: string
+          example: 660a123456789abcdef01234
+        orderId:
+          type: string
+          nullable: true
+          example: null
+        createdAt:
+          type: string
+          format: date-time
+
+    ProductionOrder:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 660a123456789abcdef01238
+        reference:
+          type: string
+          example: OF-2026-001
+        productId:
+          type: string
+          example: 660a123456789abcdef01236
+        assignedOperatorId:
+          type: string
+          example: 660a123456789abcdef01234
+        quantityToProduce:
+          type: number
+          example: 10
+        status:
+          type: string
+          enum: [PLANIFIE, EN_COURS, TERMINE, ANNULE]
+          example: PLANIFIE
+        compositionSnapshot:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductCompositionItem'
+        startDate:
+          type: string
+          format: date-time
+          nullable: true
+        endDate:
+          type: string
+          format: date-time
+          nullable: true
+
+paths:
+  /api/health:
+    get:
+      summary: Healthcheck de l'API
+      description: Vérifie que le serveur FactoryFlow est opérationnel.
+      responses:
+        200:
+          description: Service en ligne
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: FactoryFlow API is running
+
+  /api/installation/status:
+    get:
+      tags: [Installation]
+      summary: Statut d'installation
+      description: Indique si l'application est déjà initialisée avec un compte administrateur.
+      responses:
+        200:
+          description: Statut d'installation retourné
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstallationStatusResponse'
+
+  /api/installation:
+    post:
+      tags: [Installation]
+      summary: Initialiser l'application (One-Shot)
+      description: Crée le premier compte Administrateur avec mot de passe haché par bcrypt. Une seconde installation est refusée.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name:
+                  type: string
+                  example: Directeur Usine
+                email:
+                  type: string
+                  example: admin@factoryflow.com
+                password:
+                  type: string
+                  example: Password123!
+      responses:
+        201:
+          description: Application installée avec succès
+        400:
+          description: L'application est déjà installée ou champs invalides
+
+  /api/auth/login:
+    post:
+      tags: [Authentification]
+      summary: Connexion utilisateur
+      description: Authentifie un utilisateur (Admin ou Opérateur) et retourne un JWT Bearer Token valide 4 heures.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  example: admin@factoryflow.com
+                password:
+                  type: string
+                  example: Password123!
+      responses:
+        200:
+          description: Connexion réussie avec token JWT
+        401:
+          description: Email ou mot de passe incorrect
+
+  /api/auth/me:
+    get:
+      tags: [Authentification]
+      summary: Consulter son profil connecté
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Données du profil connecté
+        401:
+          description: Non authentifié
+    put:
+      tags: [Authentification]
+      summary: Modifier son profil connecté
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: Nouveau Nom
+                email:
+                  type: string
+                  example: newemail@factoryflow.com
+      responses:
+        200:
+          description: Profil mis à jour
+        400:
+          description: Données invalides ou email déjà utilisé
+
+  /api/users:
+    get:
+      tags: [Utilisateurs]
+      summary: Lister les utilisateurs (Admin)
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Liste des utilisateurs retournée
+        403:
+          description: Réservé aux administrateurs
+    post:
+      tags: [Utilisateurs]
+      summary: Créer un compte utilisateur (Admin)
+      description: Permet à l'Admin de créer des comptes Opérateurs ou d'autres Administrateurs.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, role]
+              properties:
+                name:
+                  type: string
+                  example: Karim Safi
+                email:
+                  type: string
+                  example: karim@factoryflow.com
+                password:
+                  type: string
+                  example: Password123!
+                role:
+                  type: string
+                  enum: [admin, operator]
+                  example: operator
+      responses:
+        201:
+          description: Utilisateur créé avec succès
+        400:
+          description: Email déjà utilisé ou champs manquants
+
+  /api/raw-materials:
+    get:
+      tags: [Matières Premières]
+      summary: Lister toutes les matières premières
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Liste des matières premières
+    post:
+      tags: [Matières Premières]
+      summary: Créer une matière première (Admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reference, name, unit]
+              properties:
+                reference:
+                  type: string
+                  example: MAT-BOIS
+                name:
+                  type: string
+                  example: Bois de Chêne
+                unit:
+                  type: string
+                  enum: [kg, g, L, ml, pièce, piece]
+                  example: kg
+                alertThreshold:
+                  type: number
+                  example: 10
+      responses:
+        201:
+          description: Matière première créée
+        400:
+          description: Référence déjà existante ou données invalides
+
+  /api/raw-materials/alerts:
+    get:
+      tags: [Matières Premières]
+      summary: Repérer les matières sous le seuil d'alerte (Admin)
+      description: Retourne toutes les matières premières dont le stock courant est inférieur ou égal au seuil critique (currentStock <= alertThreshold).
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Liste des matières en alerte de stock
+
+  /api/raw-materials/{id}:
+    get:
+      tags: [Matières Premières]
+      summary: Obtenir une matière première par ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Détails de la matière première
+        404:
+          description: Matière non trouvée
+    put:
+      tags: [Matières Premières]
+      summary: Modifier une matière première (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                unit:
+                  type: string
+                alertThreshold:
+                  type: number
+      responses:
+        200:
+          description: Matière mise à jour
+    delete:
+      tags: [Matières Premières]
+      summary: Supprimer une matière première (Admin)
+      description: Refusé si le stock est supérieur à 0.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Matière supprimée
+        400:
+          description: Impossible de supprimer si le stock est supérieur à zéro
+
+  /api/stock-movements:
+    get:
+      tags: [Mouvements de Stock]
+      summary: Consulter l'historique de tous les mouvements
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Historique des mouvements de stock
+    post:
+      tags: [Mouvements de Stock]
+      summary: Enregistrer une entrée ou sortie manuelle de stock
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, materialId, quantity, reason]
+              properties:
+                type:
+                  type: string
+                  enum: [ENTREE, SORTIE]
+                  example: ENTREE
+                materialId:
+                  type: string
+                  example: 660a123456789abcdef01235
+                quantity:
+                  type: number
+                  example: 50
+                reason:
+                  type: string
+                  example: Réception livraison fournisseur #101
+      responses:
+        201:
+          description: Mouvement créé et stock mis à jour
+        400:
+          description: Quantité invalide ou stock insuffisant en cas de sortie
+
+  /api/stock-movements/material/{materialId}:
+    get:
+      tags: [Mouvements de Stock]
+      summary: Consulter les mouvements d'une matière spécifique
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: materialId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Historique pour la matière demandée
+
+  /api/products:
+    get:
+      tags: [Produits]
+      summary: Lister tous les produits avec leur composition
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Catalogue des produits
+    post:
+      tags: [Produits]
+      summary: Créer un produit avec sa recette (Admin)
+      description: Doit comporter au moins une matière. Une matière ne peut figurer qu'une seule fois dans la recette.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reference, name, composition]
+              properties:
+                reference:
+                  type: string
+                  example: PROD-CHAISE
+                name:
+                  type: string
+                  example: Chaise Standard Safi
+                composition:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ProductCompositionItem'
+      responses:
+        201:
+          description: Produit créé avec succès
+        400:
+          description: Doublon de matière, référence existante ou matière inexistante
+
+  /api/products/{id}:
+    get:
+      tags: [Produits]
+      summary: Obtenir un produit par ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Détails du produit
+    put:
+      tags: [Produits]
+      summary: Modifier un produit (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                composition:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ProductCompositionItem'
+      responses:
+        200:
+          description: Produit mis à jour
+    delete:
+      tags: [Produits]
+      summary: Supprimer un produit (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Produit supprimé
+
+  /api/production-orders:
+    get:
+      tags: [Ordres de Fabrication]
+      summary: Lister les ordres de fabrication (avec filtres & pagination)
+      description: >
+        - Admin : consulte tous les ordres avec filtres (statut, produit, période) et pagination.
+        - Opérateur : cloisonnement strict, ne consulte QUE les ordres qui lui sont affectés.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Numéro de page
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: Nombre d'éléments par page
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PLANIFIE, EN_COURS, TERMINE, ANNULE]
+          description: Filtrer par statut
+        - name: productId
+          in: query
+          schema:
+            type: string
+          description: Filtrer par ID produit
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Date début de période (YYYY-MM-DD)
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Date fin de période (YYYY-MM-DD)
+      responses:
+        200:
+          description: Liste paginée retournée avec métadonnées
+    post:
+      tags: [Ordres de Fabrication]
+      summary: Créer et planifier un ordre de fabrication (Admin)
+      description: Fige la composition unitaire dans un snapshot immuable au statut PLANIFIE.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reference, productId, assignedOperatorId, quantityToProduce]
+              properties:
+                reference:
+                  type: string
+                  example: OF-2026-001
+                productId:
+                  type: string
+                  example: 660a123456789abcdef01236
+                assignedOperatorId:
+                  type: string
+                  example: 660a123456789abcdef01234
+                quantityToProduce:
+                  type: integer
+                  example: 10
+      responses:
+        201:
+          description: Ordre de fabrication planifié
+
+  /api/production-orders/{id}:
+    get:
+      tags: [Ordres de Fabrication]
+      summary: Consulter un ordre de fabrication par son ID
+      description: Un opérateur ne peut consulter que son propre ordre (403 sinon).
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Détails complets de l'ordre
+        403:
+          description: Accès interdit (ordre assigné à un autre opérateur)
+        404:
+          description: Ordre introuvable
+    put:
+      tags: [Ordres de Fabrication]
+      summary: Modifier un ordre encore planifié (Admin)
+      description: Possible UNIQUEMENT si le statut est PLANIFIE.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quantityToProduce:
+                  type: number
+                  example: 12
+                assignedOperatorId:
+                  type: string
+                  example: 660a123456789abcdef01234
+      responses:
+        200:
+          description: Ordre modifié avec succès
+        400:
+          description: Seul un ordre planifié peut être modifié
+
+  /api/production-orders/{id}/start:
+    patch:
+      tags: [Ordres de Fabrication]
+      summary: Démarrer un ordre de fabrication (Transaction ACID)
+      description: >
+        Vérifie la disponibilité des stocks pour toutes les matières requises.
+        En cas de succès : déduit atomiquement les stocks, enregistre les mouvements SORTIE
+        et passe le statut à EN_COURS dans une session transactionnelle MongoDB.
+        Seul l'opérateur affecté ou l'admin peut démarrer l'ordre. Un second démarrage est rejeté (400).
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Ordre démarré avec succès (statut EN_COURS)
+        400:
+          description: Stock insuffisant ou ordre non planifié
+        403:
+          description: Seul l'opérateur affecté peut démarrer l'ordre
+
+  /api/production-orders/{id}/finish:
+    patch:
+      tags: [Ordres de Fabrication]
+      summary: Terminer un ordre de fabrication en cours
+      description: Clôture l'ordre et enregistre la date effective de fin. Seul un ordre EN_COURS peut être terminé.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Ordre terminé avec succès (statut TERMINE)
+        400:
+          description: Seul un ordre EN_COURS peut être terminé
+        403:
+          description: Vous ne pouvez pas terminer l'ordre d'un autre opérateur
+
+  /api/production-orders/{id}/cancel:
+    patch:
+      tags: [Ordres de Fabrication]
+      summary: Annuler un ordre planifié (Admin)
+      description: Seul un ordre PLANIFIE peut être annulé.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Ordre annulé avec succès (statut ANNULE)
+        400:
+          description: Impossible d'annuler cet ordre

@@ -15,5 +15,6 @@ router.patch('/:id/start',productionOrderController.start);
 router.patch('/:id/finish',productionOrderController.finish);
 router.patch('/:id/cancel',restrictTo('admin'),productionOrderController.cancel);
 
+router.put('/:id',restrictTo('admin'),productionOrderController.update),
 
 module.exports = router;

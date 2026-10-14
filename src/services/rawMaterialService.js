@@ -22,6 +22,10 @@ class RawMaterialService{
         return isExisting;
     };
 
+    async getLowStockMaterials(){
+        return await rawRepository.findLowStock();
+    }
+
     async updateRawMaterial(id,updateData){
         if(updateData.currentStock) delete updateData.currentStock;
         const updatedMaterial = await rawRepository.update(id,updateData);

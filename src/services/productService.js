@@ -5,12 +5,18 @@ class ProductService {
     async createProduct(data) {
         const prod = await productRepository.findByReference(data.reference);
         if (prod) throw new AppError('Un produit avec cet ref existe deja', 400);
+
+        if(!data.composition || !Array.isArray(data.composition) || data.composition.length === 0) throw new AppError('La composition doit contenir au moins une matiere premiere',400);
+    
         for (let i = 0; i < data.composition.length; i++) {
             const mat = await rawMaterialRepository.findById(data.composition[i].materialId);
             if (!mat)
                 throw new AppError('Une des matieres premiers de la recette n existe pas', 400);
         }
 
+        const materialIds = data.composition.map(item=>item.materialId.toString());
+
+        if(new Set(materialIds).size !== materialIds.length) throw new AppError('Une matiere ne peut figurer qu une seule fois dans la composition',400);
         return await productRepository.create(data);
     };
 

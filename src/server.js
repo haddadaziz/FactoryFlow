@@ -5,10 +5,10 @@ const connectDb = require('./config/db.js');
 
 const PORT = process.env.PORT || 5000;
 
-const startServer = async () =>{
+const startServer = async () => {
     await connectDb();
 
-    app.listen(PORT,()=>{
+    app.listen(PORT,'0.0.0.0', () => {
         console.log(`serveur pret sur ${PORT} en mode ${process.env.NODE_ENV}`);
     });
 };
